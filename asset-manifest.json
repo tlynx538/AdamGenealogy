@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/AdamGenealogy/static/css/main.bff2c4a3.css",
+    "main.js": "/AdamGenealogy/static/js/main.ee415d28.js",
+    "index.html": "/AdamGenealogy/index.html",
+    "main.bff2c4a3.css.map": "/AdamGenealogy/static/css/main.bff2c4a3.css.map",
+    "main.ee415d28.js.map": "/AdamGenealogy/static/js/main.ee415d28.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.bff2c4a3.css",
+    "static/js/main.ee415d28.js"
+  ]
+}
