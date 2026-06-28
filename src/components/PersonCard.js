@@ -1,25 +1,42 @@
 import React from 'react';
 import { GraphManager } from '../services/graphManager';
 
-export default function PersonCard({ person, graph, onClose }) {
+function getImageUrl(image) {
+  if (!image) return null;
+  if (image.startsWith('http')) return image;
+  return `https://commons.wikimedia.org/w/index.php?title=Special:FilePath/${encodeURIComponent(image)}`;
+}
+
+export default function PersonCard({ person, graph, onClose, onPersonClick }) {
   if (!person) return null;
 
-  // Initialize a safe, lightweight instance of GraphManager if it wasn't passed directly
   let gm = null;
-  if (graph && graph.nodes && graph.edges) {
+  if (graph?.nodes?.length) {
     gm = new GraphManager(graph.nodes, graph.edges);
   }
 
-  // Fallback to check window if initialized elsewhere, but prioritize props
-  if (!gm) {
-    gm = window.graphManager;
-  }
+  // Detect dark mode from body background (or fallback to a light theme)
+  const bgColor = document.body.style.background || '#f4efe2';
+  const isDarkMode = bgColor.includes('1a1a16') || bgColor.includes('#1a1a16') || bgColor === 'rgb(26, 26, 22)';
 
-  // If both strategies fail, provide a clear diagnostic error card
+  const theme = {
+    bg: isDarkMode ? '#23201a' : '#fcf9f2',
+    border: isDarkMode ? '#3d362a' : '#d5cbaf',
+    ink: isDarkMode ? '#e6dfd3' : '#3e3525',
+    inkMuted: isDarkMode ? '#a39882' : '#6b5f4c',
+    gold: '#b8860b',
+    badgeBg: isDarkMode ? '#2e2a22' : '#f4efe2'
+  };
+
   if (!gm) {
     return (
-      <div style={{ position: 'absolute', top: 20, right: 20, width: 360, background: '#1e1e1e', borderRadius: 12, padding: 20, zIndex: 20, color: '#aaa', border: '1px solid #333' }}>
-        Unable to access Graph Engine. Please verify the "graph" prop is provided.
+      <div style={{
+        position: 'absolute', top: 20, right: 20, width: 350,
+        background: theme.bg, padding: 20, zIndex: 20,
+        color: theme.ink, border: `1px solid ${theme.border}`,
+        fontFamily: 'Georgia, serif', fontStyle: 'italic'
+      }}>
+        The records engine is currently dormant.
       </div>
     );
   }
@@ -27,82 +44,124 @@ export default function PersonCard({ person, graph, onClose }) {
   const rel = gm.getRelations(person.id);
   const parents = rel?.parents?.map(id => gm.getPerson(id)).filter(Boolean) || [];
   const children = rel?.children?.map(id => gm.getPerson(id)).filter(Boolean) || [];
-  
-  // Safe extraction fallbacks for structural spouse properties
-  const spouses = rel?.spouses?.map(id => gm.getPerson(id)).filter(Boolean) || [];
-  const sourceTags = person.sources || ['wikidata'];
+  const sourceTags = person.sources || ['archive'];
+  const imageUrl = getImageUrl(person.image);
 
   return (
     <div style={{
       position: 'absolute',
       top: 20,
       right: 20,
-      width: 360,
-      maxHeight: 'calc(100% - 100px)',
-      background: '#111a24',
-      borderRadius: 12,
-      boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
-      padding: '20px 20px 16px',
+      width: 350,
+      maxHeight: 'calc(100% - 80px)',
+      background: theme.bg,
+      border: `2px solid ${theme.border}`,
+      padding: '20px',
       overflowY: 'auto',
       zIndex: 20,
-      border: '1px solid #2a3d50',
-      color: '#fff',
-      transition: 'opacity 0.2s, transform 0.2s'
+      color: theme.ink,
+      fontFamily: 'Georgia, serif',
     }}>
+      {/* Close button */}
       <button
         onClick={onClose}
         style={{
           float: 'right',
           background: 'none',
           border: 'none',
-          color: '#aaa',
-          fontSize: '1.2rem',
+          color: theme.inkMuted,
+          fontSize: '1rem',
           cursor: 'pointer',
-          lineHeight: 1,
-          padding: '0 4px'
+          fontFamily: 'inherit',
+          padding: 0
         }}
       >
-        ✕
+        Dismiss
       </button>
 
       <div style={{ marginTop: 4 }}>
-        <h2 style={{ fontSize: '1.3rem', marginBottom: 6, color: '#fff', fontWeight: 600 }}>{person.name}</h2>
+        <h2 style={{ fontSize: '1.4rem', marginBottom: 4, color: theme.ink, fontWeight: 'bold' }}>
+          {person.name}
+        </h2>
 
-        {person.image && (
-          <img
-            src={person.image}
-            alt={person.name}
-            style={{
+        {/* Image */}
+        <div style={{
+          width: '100%',
+          background: theme.badgeBg,
+          border: `1px solid ${theme.border}`,
+          margin: '12px 0',
+          overflow: 'hidden'
+        }}>
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={person.name}
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                filter: isDarkMode ? 'sepia(0.2) contrast(0.9)' : 'sepia(0.15)'
+              }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                const parent = e.target.parentNode;
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = `
+                  width: 100%;
+                  min-height: 80px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: ${theme.inkMuted};
+                  font-size: 0.8rem;
+                  font-style: italic;
+                  padding: 20px 0;
+                `;
+                placeholder.textContent = 'No illustration preserved';
+                parent.appendChild(placeholder);
+              }}
+            />
+          ) : (
+            <div style={{
               width: '100%',
-              maxHeight: 180,
-              borderRadius: 8,
-              margin: '8px 0',
-              objectFit: 'contain',
-              background: '#0e1520',
-              border: '1px solid #2a3d50'
-            }}
-          />
-        )}
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: '0.85rem', color: '#bbb', margin: '8px 0' }}>
-          {person.birth && <span>📅 Born: {person.birth}</span>}
-          {person.death && <span>💀 Died: {person.death}</span>}
-          {person.gender && <span>⚥ {person.gender === 'Q6581097' ? 'Male' : person.gender === 'Q6581072' ? 'Female' : 'Historical'}</span>}
+              minHeight: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: theme.inkMuted,
+              fontSize: '0.8rem',
+              fontStyle: 'italic',
+              padding: '20px 0'
+            }}>
+              No illustration preserved
+            </div>
+          )}
         </div>
 
+        {/* Vital stats */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', fontSize: '0.82rem', color: theme.inkMuted, margin: '8px 0' }}>
+          {person.birth && <span>Born: {person.birth.slice(0,4).replace('-', '')} {Number(person.birth.slice(0,4)) < 0 ? 'BC' : 'AD'}</span>}
+          {person.death && <span>Died: {person.death.slice(0,4).replace('-', '')} {Number(person.death.slice(0,4)) < 0 ? 'BC' : 'AD'}</span>}
+          {person.gender && (
+            <span>Line: {person.gender === 'Q6581097' ? 'Patriarch' : person.gender === 'Q6581072' ? 'Matriarch' : 'Historical'}</span>
+          )}
+        </div>
+
+        {/* Source badges */}
         <div style={{ margin: '8px 0' }}>
           {sourceTags.map(s => (
             <span
               key={s}
               style={{
-                background: '#1c2836',
-                padding: '2px 10px',
-                borderRadius: 12,
-                fontSize: '0.7rem',
-                marginRight: 4,
+                background: theme.badgeBg,
+                padding: '2px 8px',
+                border: `1px solid ${theme.border}`,
+                fontSize: '0.68rem',
+                marginRight: 6,
                 display: 'inline-block',
-                color: '#7799aa',
-                border: '1px solid #3b4e63'
+                color: theme.inkMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
               }}
             >
               {s}
@@ -110,22 +169,43 @@ export default function PersonCard({ person, graph, onClose }) {
           ))}
         </div>
 
+        {/* Description */}
         {person.description && (
-          <p style={{ margin: '12px 0', fontSize: '0.85rem', lineHeight: 1.4, color: '#b0c4de' }}>
-            {person.description.length > 300
-              ? person.description.substring(0, 300) + '…'
-              : person.description}
+          <p style={{ margin: '14px 0', fontSize: '0.85rem', lineHeight: 1.5, color: theme.ink, fontStyle: 'italic' }}>
+            "{person.description.length > 260
+              ? person.description.substring(0, 260) + '…'
+              : person.description}"
           </p>
         )}
 
+        {/* Parents – FIXED click handler */}
         {parents.length > 0 && (
           <>
-            <div style={{ margin: '12px 0 4px', fontWeight: 600, color: '#e67e22', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              👪 Parents
+            <div style={{ margin: '16px 0 6px', fontWeight: 'bold', color: theme.gold, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              📜 Begotten By
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 6px', fontSize: '0.85rem' }}>
               {parents.map(p => (
-                <span key={p.id} style={{ background: '#1c2836', padding: '3px 10px', borderRadius: 6, color: '#ecf0f1', border: '1px solid #2a3d50' }}>
+                <span
+                  key={p.id}
+                  onClick={() => onPersonClick?.(p.id)}  // <-- FIXED
+                  style={{
+                    background: theme.bg,
+                    padding: '3px 8px',
+                    border: `1px solid ${theme.border}`,
+                    color: theme.ink,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = theme.gold;
+                    e.currentTarget.style.color = theme.gold;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = theme.border;
+                    e.currentTarget.style.color = theme.ink;
+                  }}
+                >
                   {p.name}
                 </span>
               ))}
@@ -133,29 +213,34 @@ export default function PersonCard({ person, graph, onClose }) {
           </>
         )}
 
-        {spouses.length > 0 && (
-          <>
-            <div style={{ margin: '12px 0 4px', fontWeight: 600, color: '#e67e22', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              💑 Spouses
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', fontSize: '0.85rem' }}>
-              {spouses.map(s => (
-                <span key={s.id} style={{ background: '#1c2836', padding: '3px 10px', borderRadius: 6, color: '#ecf0f1', border: '1px solid #2a3d50' }}>
-                  {s.name}
-                </span>
-              ))}
-            </div>
-          </>
-        )}
-
+        {/* Children */}
         {children.length > 0 && (
           <>
-            <div style={{ margin: '12px 0 4px', fontWeight: 600, color: '#e67e22', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              👶 Children
+            <div style={{ margin: '16px 0 6px', fontWeight: 'bold', color: theme.gold, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              🌱 Begat (Offspring)
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 6px', fontSize: '0.85rem' }}>
               {children.map(c => (
-                <span key={c.id} style={{ background: '#1c2836', padding: '3px 10px', borderRadius: 6, color: '#ecf0f1', border: '1px solid #2a3d50' }}>
+                <span
+                  key={c.id}
+                  onClick={() => onPersonClick?.(c.id)}
+                  style={{
+                    background: theme.bg,
+                    padding: '3px 8px',
+                    border: `1px solid ${theme.border}`,
+                    color: theme.ink,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = theme.gold;
+                    e.currentTarget.style.color = theme.gold;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = theme.border;
+                    e.currentTarget.style.color = theme.ink;
+                  }}
+                >
                   {c.name}
                 </span>
               ))}
@@ -163,14 +248,15 @@ export default function PersonCard({ person, graph, onClose }) {
           </>
         )}
 
-        <div style={{ marginTop: 16, pt: 8, borderTop: '1px solid #2a3d50', fontSize: '0.85rem' }}>
+        {/* Wikidata link */}
+        <div style={{ marginTop: 20, paddingTop: 10, borderTop: `1px solid ${theme.border}`, fontSize: '0.78rem' }}>
           <a
             href={`https://www.wikidata.org/wiki/${person.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#7799aa', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+            style={{ color: theme.gold, textDecoration: 'none', fontStyle: 'italic' }}
           >
-            🔗 View structural entry on Wikidata
+            Examine structural scroll on Wikidata →
           </a>
         </div>
       </div>

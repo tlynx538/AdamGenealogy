@@ -42,32 +42,43 @@ export class GraphManager {
     return this.nodes.filter(n => (this.adj.get(n.id)?.parents?.length ?? 0) === 0);
   }
 
-  // ================================
-  // ✅ NEW: FIXED LINEAGE ROOT MAP
-  // ================================
-  buildLineageMap(seedIds) {
+    buildLineageMap(seedIds) {
     const map = new Map();
-    const queue = seedIds.map(id => ({ id, root: id }));
-    const visited = new Set();
+    const dist = new Map();
 
-    while (queue.length) {
-      const { id, root } = queue.shift();
-      if (visited.has(id)) continue;
-      visited.add(id);
-
-      if (!map.has(id)) map.set(id, root);
-
-      const rel = this.adj.get(id);
-      if (!rel) continue;
-
-      for (const child of rel.children) {
-        if (!visited.has(child)) {
-          queue.push({ id: child, root });
-        }
-      }
+    // Initialize seeds
+    for (const seed of seedIds) {
+        map.set(seed, seed);
+        dist.set(seed, 0);
     }
 
-    this.lineageMap = map;
+    // BFS from each seed independently
+    for (const seed of seedIds) {
+        const queue = [{ id: seed, d: 0 }];
+        const visited = new Set();
+
+        while (queue.length) {
+        const { id, d } = queue.shift();
+        if (visited.has(id)) continue;
+        visited.add(id);
+
+        // If this seed gives a shorter distance, update assignment
+        if (!dist.has(id) || d < dist.get(id)) {
+            dist.set(id, d);
+            map.set(id, seed);
+        } // else keep existing (closer or equal)
+
+        const rel = this.adj.get(id);
+        if (rel) {
+            for (const child of rel.children) {
+            if (!visited.has(child)) {
+                queue.push({ id: child, d: d + 1 });
+            }
+            }
+        }
+        }
+    }
+
     return map;
-  }
+    }
 }

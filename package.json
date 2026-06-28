@@ -1,15 +1,16 @@
 {
   "name": "family-tree",
-  "homepage": "https://vjaiwantx.co",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
     "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "gh-pages": "^6.3.0",
+    "katex": "^0.17.0",
     "npm": "^11.17.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-katex": "^3.1.0",
     "react-scripts": "5.0.1"
   },
   "scripts": {
