@@ -26,13 +26,14 @@ function App() {
       setLoadingMsg(msg);
       if (isError) setError(msg);
     });
-
+    
     if (forceRefresh) {
-      await loader.clearCache();
+      await loader.saveToIndexedDB?.({ nodes: [], edges: [] }); // optional reset
     }
 
+
     try {
-      // ✅ Pass the refresh flag to the loader
+      // Pass the refresh flag to the loader
       const data = await loader.load(forceRefresh);
       if (data.error) {
         setError(data.error);
