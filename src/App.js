@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import GenealogyGraph from './components/GenealogyGraph';
 import PersonCard from './components/PersonCard';
 import { GenealogyLoader } from './services/loader';
-import { GraphManager } from './services/graphManager'; // 🧠 ADDED: Required for relationship searches
 
 function App() {
   const [graph, setGraph]           = useState({ nodes: [], edges: [] });
@@ -12,7 +11,6 @@ function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedId, setHighlightedId] = useState(null);
-  const [collapsed, setCollapsed]   = useState(new Set());
   const [darkMode, setDarkMode]     = useState(true);
   const [focusId, setFocusId]       = useState(null);
 
@@ -26,7 +24,7 @@ function App() {
       setLoadingMsg(msg);
       if (isError) setError(msg);
     });
-    
+
     if (forceRefresh) {
       await loader.saveToIndexedDB?.({ nodes: [], edges: [] }); // optional reset
     }
@@ -39,7 +37,6 @@ function App() {
         setError(data.error);
       } else if (data.nodes?.length) {
         setGraph(data);
-        setCollapsed(new Set());  // reset collapse state on reload
         console.log(`✅ Loaded ${data.nodes.length} people`);
       } else {
         setError('No data loaded. Check your internet connection.');
