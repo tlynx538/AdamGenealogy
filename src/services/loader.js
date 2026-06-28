@@ -1,5 +1,3 @@
-import { Utils } from '../utils';
-
 export class GenealogyLoader {
   constructor() {
     this.onStatus = () => {};

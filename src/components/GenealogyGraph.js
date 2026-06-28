@@ -107,7 +107,6 @@ export default function GenealogyGraph({
 
   const [positions, setPositions] = useState(new Map());
   const [tree, setTree] = useState(null);
-  const [gmState, setGmState] = useState(null);
   const [activeNode, setActiveNode] = useState(null);
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
 
@@ -116,7 +115,6 @@ export default function GenealogyGraph({
     if (!graph?.nodes?.length) return;
 
     const gm = new GraphManager(graph.nodes, graph.edges);
-    setGmState(gm);
 
     const t = buildStrictTree(gm);
     setTree(t);
